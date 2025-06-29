@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dilluminous Ltd | Quotation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      color: #000;
+      padding: 20px;
+    }
+    #quoteContent {
+      background: #fff;
+      padding: 40px;
+      max-width: 850px;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #888;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    input {
+      width: 95%;
+      padding: 4px;
+    }
+    h2, h3, h4 {
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #005b96;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="quoteContent">
+    <img src="logo.png" alt="Dilluminous Logo" style="width: 180px;" />
+    <h2>Quotation</h2>
+
+    <label>Client Name: <input id="clientName" oninput="updateRef()" /></label><br />
+    <label>Client Order No: <input id="clientOrderNo" oninput="updateRef()" /></label><br />
+    <label>Quote No: <input id="quoteNo" readonly /></label><br />
+    <label>Date: <input type="date" id="quoteDate" /></label><br /><br />
+
+    <table id="quoteTable">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Cost</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td><input class="desc" /></td>
+          <td><input class="qty" type="number" value="1" /></td>
+          <td><input class="cost" type="number" value="0" /></td>
+          <td class="total">0.00</td>
+        </tr>
+      </tbody>
+    </table>
+    <button onclick="addRow()">+ Add Row</button>
+
+    <h4>Calculations</h4>
+    <p>Subtotal: GHS <span id="subtotal">0.00</span></p>
+    <p>VAT 15%: GHS <span id="vat">0.00</span></p>
+    <p>NHIL 2.5%: GHS <span id="nhil">0.00</span></p>
+    <p>GETFund 2.5%: GHS <span id="getfund">0.00</span></p>
+    <p>COVID Levy 1%: GHS <span id="covid">0.00</span></p>
+    <h3>Grand Total: GHS <span id="grandTotal">0.00</span></h3>
+  </div>
+
+  <div style="text-align: center;">
+    <button onclick="generatePDF()">📄 Download PDF</button>
+  </div>
+
+  <!-- PDF Libraries -->
+  <script src="js/html2canvas.min.js"></script>
+  <script src="js/jspdf.umd.min.js"></script>
+
+  <!-- Quotation Logic -->
+  <script>
+    const { jsPDF } = window.jspdf;
+
+    function updateRef() {
+      const c = document.getElementById('clientName').value;
+      const o = document.getElementById('clientOrderNo').value;
+      if (c && o) {
+        const abbr = c.match(/\b\w/g).join('').toUpperCase().substr(0, 4);
+        const ref = `${abbr}-${o}-Q-${Date.now().toString().slice(-4)}`;
+        document.getElementById('quoteNo').value = ref;
+      }
+    }
+
+    function addRow() {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input class="desc" /></td>
+        <td><input class="qty" type="number" value="1" /></td>
+        <td><input class="cost" type="number" value="0" /></td>
+        <td class="total">0.00</td>`;
+      document.getElementById('tableBody').appendChild(row);
+      bindRowEvents(row);
+    }
+
+    function bindRowEvents(row) {
+      row.querySelectorAll('.qty, .cost').forEach(input => {
+        input.addEventListener('input', calculateTotals);
+      });
+    }
+
+    document.querySelectorAll('.qty, .cost').forEach(input => {
+      input.addEventListener('input', calculateTotals);
+    });
+
+    function calculateTotals() {
+      let subtotal = 0;
+      document.querySelectorAll('#quoteTable tbody tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost').value) || 0;
+        const total = qty * cost;
+        row.querySelector('.total').innerText = total.toFixed(2);
+        subtotal += total;
+      });
+
+      const vat = subtotal * 0.15;
+      const nhil = subtotal * 0.025;
+      const getfund = subtotal * 0.025;
+      const covid = subtotal * 0.01;
+      const grand = subtotal + vat + nhil + getfund + covid;
+
+      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+      document.getElementById('vat').innerText = vat.toFixed(2);
+      document.getElementById('nhil').innerText = nhil.toFixed(2);
+      document.getElementById('getfund').innerText = getfund.toFixed(2);
+      document.getElementById('covid').innerText = covid.toFixed(2);
+      document.getElementById('grandTotal').innerText = grand.toFixed(2);
+    }
+
+    async function generatePDF() {
+      calculateTotals(); // ensure updated
+      const element = document.getElementById('quoteContent');
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${document.getElementById('quoteNo').value || 'quotation'}.pdf`);
+    }
+  </script>
+
+</body>
+</html>
