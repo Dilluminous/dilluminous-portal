@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quotation Generator | Dilluminous Ltd</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="dashboard-body">
+  <div id="quoteContent" style="background: #fff; color: #000; padding: 40px; max-width: 900px; margin: auto; font-family: Arial, sans-serif;">
+    <table width="100%">
+      <tr>
+        <td>
+          <img src="logo.png" style="height: 60px;">
+        </td>
+        <td style="text-align: right;">
+          <small>
+            GA-133-0481 Airport Residential, Maidoo-Akweemi Street<br>
+            Accra, Greater Accra, Ghana<br>
+            Phone: +233 59 896 6819<br>
+            Email: dilluminousltd@gmail.com
+          </small>
+        </td>
+      </tr>
+    </table>
+
+    <h2 style="text-align:center; margin-top: 40px;">QUOTATION</h2>
+
+    <p><strong>Quote No:</strong> <input type="text" id="quoteNo" value="DIL-QUOTE-001"></p>
+    <p><strong>Date:</strong> <input type="date" id="quoteDate" value=""></p>
+
+    <table width="100%" border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>Item Description</th>
+          <th>Qty</th>
+          <th>Unit Price (GHS)</th>
+          <th>Total (GHS)</th>
+        </tr>
+      </thead>
+      <tbody id="itemsTable">
+        <tr>
+          <td><input type="text" class="desc" value="Anti Spatter High Tech 400ml"></td>
+          <td><input type="number" class="qty" value="30"></td>
+          <td><input type="number" class="price" value="200"></td>
+          <td class="lineTotal">6000.00</td>
+        </tr>
+      </tbody>
+    </table>
+    <button onclick="addRow()">+ Add Item</button>
+
+    <h4 style="margin-top: 30px;">Taxes</h4>
+    <table width="100%" border="0" cellspacing="0" cellpadding="4">
+      <tbody>
+        <tr><td>Subtotal:</td><td id="subtotal">GHS 0.00</td></tr>
+        <tr><td>VAT (15%):</td><td id="vat">GHS 0.00</td></tr>
+        <tr><td>NHIL (2.5%):</td><td id="nhil">GHS 0.00</td></tr>
+        <tr><td>GETFund (2.5%):</td><td id="getfund">GHS 0.00</td></tr>
+        <tr><td>COVID Levy (1%):</td><td id="covid">GHS 0.00</td></tr>
+        <tr style="font-weight: bold;"><td>Total Taxes:</td><td id="totalTaxes">GHS 0.00</td></tr>
+        <tr style="font-weight: bold;"><td>Grand Total Payable:</td><td id="grandTotal">GHS 0.00</td></tr>
+      </tbody>
+    </table>
+
+    <h4 style="margin-top: 30px;">Terms and Conditions</h4>
+    <ul>
+      <li>Validity: 7 days from date of issue.</li>
+      <li>Payment Terms: Payment with Order.</li>
+      <li>Delivery: Same Day.</li>
+    </ul>
+
+    <p style="margin-top: 40px;"><strong>Payment Details:</strong><br>
+      DILLUMINOUS LTD<br>
+      Merchant ID: 759751 | Number: 059 896 6819
+    </p>
+
+    <p style="text-align:center; margin-top: 40px;">
+      Thank you for considering Dilluminous LTD. We look forward to serving you!
+    </p>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px;">
+    <button onclick="generatePDF()">📄 Download PDF</button>
+  </div>
+
+  <script src="html2pdf.bundle.min.js"></script>
+  <script>
+    function calculateTotals() {
+      let subtotal = 0;
+      document.querySelectorAll('#itemsTable tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty')?.value || 0);
+        const price = parseFloat(row.querySelector('.price')?.value || 0);
+        const total = qty * price;
+        row.querySelector('.lineTotal').innerText = total.toFixed(2);
+        subtotal += total;
+      });
+
+      const vat = subtotal * 0.15;
+      const nhil = subtotal * 0.025;
+      const getfund = subtotal * 0.025;
+      const covid = subtotal * 0.01;
+      const totalTaxes = vat + nhil + getfund + covid;
+      const grandTotal = subtotal + totalTaxes;
+
+      document.getElementById('subtotal').innerText = `GHS ${subtotal.toFixed(2)}`;
+      document.getElementById('vat').innerText = `GHS ${vat.toFixed(2)}`;
+      document.getElementById('nhil').innerText = `GHS ${nhil.toFixed(2)}`;
+      document.getElementById('getfund').innerText = `GHS ${getfund.toFixed(2)}`;
+      document.getElementById('covid').innerText = `GHS ${covid.toFixed(2)}`;
+      document.getElementById('totalTaxes').innerText = `GHS ${totalTaxes.toFixed(2)}`;
+      document.getElementById('grandTotal').innerText = `GHS ${grandTotal.toFixed(2)}`;
+    }
+
+    function addRow() {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" class="desc"></td>
+        <td><input type="number" class="qty" value="1"></td>
+        <td><input type="number" class="price" value="0"></td>
+        <td class="lineTotal">0.00</td>
+      `;
+      document.getElementById("itemsTable").appendChild(row);
+      bindInputs(row);
+    }
+
+    function bindInputs(row) {
+      row.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', calculateTotals);
+      });
+    }
+
+    // Initial binding
+    document.querySelectorAll('#itemsTable tr').forEach(bindInputs);
+
+    // Set current date
+    document.getElementById('quoteDate').value = new Date().toISOString().slice(0, 10);
+
+    function generatePDF() {
+      const element = document.getElementById('quoteContent');
+      html2pdf().from(element).save(`quotation_${document.getElementById('quoteNo').value}.pdf`);
+    }
+
+    // Recalculate every time user changes inputs
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', calculateTotals);
+    });
+
+    calculateTotals(); // Run once on load
+  </script>
+</body>
+</html>

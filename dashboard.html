@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta charset="UTF-8">
+  <title>Dilluminous Staff Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+  <header class="dashboard-header">
+    <img src="logo.png" alt="Logo" class="dashboard-logo">
+    <div>
+      <h2>Welcome, Dielle Robertson</h2>
+      <p>Role: Sales Manager</p>
+    </div>
+  </header>
+
+  <nav class="nav-menu">
+    <button onclick="loadModule('tasks')">🛠 Task Tracker</button>
+    <button onclick="loadModule('quote')">💰 Markup Calculator</button>
+    <button onclick="loadModule('supplier')">🧾 Supplier Quote Generator</button>
+    <button onclick="loadModule('records')">📁 Upload Records</button>
+    <button onclick="loadModule('logout')">🚪 Log Out</button>
+  </nav>
+
+  <main id="moduleContainer">
+    <p>Select a module to begin.</p>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
