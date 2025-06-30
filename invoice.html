@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice | Dilluminous Ltd</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    #invoiceArea {
+      background: white;
+      padding: 30px;
+      max-width: 800px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #003366;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 14px;
+    }
+    button {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #003366;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="invoiceArea">
+  <h1>Dilluminous Ltd</h1>
+  <h2>Invoice</h2>
+
+  <p><strong>Date:</strong> <input type="date" id="invoiceDate" value=""></p>
+  <p><strong>Client Name:</strong> <input type="text" id="clientName" value="Harlequin Oil & Gas Ltd"></p>
+  <p><strong>Client Ref Order #:</strong> <input type="text" id="clientOrder" placeholder="Client Order Ref"></p>
+  <p><strong>Invoice Ref #:</strong> <span id="invoiceNumber">AUTO-GENERATED</span></p>
+
+  <table id="invoiceTable">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>Unit Price (GHS)</th>
+        <th>Total (GHS)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input value="1" /></td>
+        <td><input value="Cutting Attachment" /></td>
+        <td><input value="1" oninput="calculateTotals()" /></td>
+        <td><input value="877.59" oninput="calculateTotals()" /></td>
+        <td><span class="lineTotal">0.00</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p><strong>Subtotal:</strong> <span id="subtotal">0.00</span> GHS</p>
+    <p><strong>VAT (15%):</strong> <span id="vat">0.00</span> GHS</p>
+    <p><strong>NHIL (2.5%):</strong> <span id="nhil">0.00</span> GHS</p>
+    <p><strong>GETFund (2.5%):</strong> <span id="getfund">0.00</span> GHS</p>
+    <p><strong>COVID Levy (1%):</strong> <span id="covid">0.00</span> GHS</p>
+    <p><strong>Total (GHS):</strong> <span id="grandTotal">0.00</span></p>
+    <br>
+    <p><strong>Prepared by:</strong> Dielle Robertson, Sales Manager</p>
+    <p><strong>Terms:</strong> Payment before dispatch. Valid for 5 days.</p>
+  </div>
+</div>
+
+<button onclick="downloadPDF()">📄 Download PDF</button>
+
+<!-- PDF Download -->
+<script type="module">
+  import html2canvas from './js/html2canvas.min.js';
+  import { jsPDF } from './js/jspdf.umd.min.js';
+
+  window.downloadPDF = async function() {
+    const element = document.getElementById("invoiceArea");
+    const canvas = await html2canvas(element, { scale: 3 });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "px",
+      format: [canvas.width, canvas.height]
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save("invoice.pdf");
+  };
+</script>
+
+<!-- Totals & Auto Ref -->
+<script>
+  function calculateTotals() {
+    let subtotal = 0;
+    const rows = document.querySelectorAll("#invoiceTable tbody tr");
+
+    rows.forEach(row => {
+      const qty = parseFloat(row.cells[2].querySelector("input").value) || 0;
+      const price = parseFloat(row.cells[3].querySelector("input").value) || 0;
+      const total = qty * price;
+      row.cells[4].querySelector("span").innerText = total.toFixed(2);
+      subtotal += total;
+    });
+
+    document.getElementById("subtotal").innerText = subtotal.toFixed(2);
+    const vat = subtotal * 0.15;
+    const nhil = subtotal * 0.025;
+    const getfund = subtotal * 0.025;
+    const covid = subtotal * 0.01;
+    const grand = subtotal + vat + nhil + getfund + covid;
+
+    document.getElementById("vat").innerText = vat.toFixed(2);
+    document.getElementById("nhil").innerText = nhil.toFixed(2);
+    document.getElementById("getfund").innerText = getfund.toFixed(2);
+    document.getElementById("covid").innerText = covid.toFixed(2);
+    document.getElementById("grandTotal").innerText = grand.toFixed(2);
+  }
+
+  function generateInvoiceNumber() {
+    const client = document.getElementById("clientName").value || "CLIENT";
+    const order = document.getElementById("clientOrder").value || "0000";
+    const abbr = client.split(" ").map(w => w[0]).join("").toUpperCase();
+    const invoiceNum = abbr + "-" + order;
+    document.getElementById("invoiceNumber").innerText = invoiceNum;
+  }
+
+  document.getElementById("clientName").addEventListener("input", generateInvoiceNumber);
+  document.getElementById("clientOrder").addEventListener("input", generateInvoiceNumber);
+  window.onload = () => {
+    calculateTotals();
+    generateInvoiceNumber();
+  };
+</script>
+
+</body>
+</html>
